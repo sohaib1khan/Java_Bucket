@@ -23,7 +23,6 @@ public class GreetingController {
     // Web Page Endpoint: Returns HTML template
     // Visit: http://localhost:8081/greet-page?name=John
     @GetMapping("/greet-page")
-    @ResponseBody
     public String greetPage(@RequestParam(required = false) String name, Model model) {
         // If name is provided in URL (?name=...)
         if (name != null && !name.isEmpty()) {
