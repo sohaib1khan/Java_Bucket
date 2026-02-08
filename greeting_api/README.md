@@ -64,7 +64,7 @@ greeting_api/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/greeting_api.git
+git clone https://github.com/sohaib1khan/Java_Bucket.git
 cd greeting_api
 
 # 2. Run the application (Maven will auto-download dependencies)
