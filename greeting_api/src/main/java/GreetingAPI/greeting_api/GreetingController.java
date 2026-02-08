@@ -15,6 +15,7 @@ public class GreetingController {
     // API Endpoint: Returns plain text (for testing with curl)
     // Visit: http://localhost:8081/greet?name=John
     @GetMapping("/greet")
+    @ResponseBody
     public String greet(@RequestParam(defaultValue = "Greet") String name) {
         // Returns plain text response (not HTML)
         return "Hello, " + name + "! Welcome to Spring Boot woooo!!!";
