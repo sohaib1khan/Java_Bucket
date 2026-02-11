@@ -12,7 +12,7 @@ COPY src ./src
 RUN mvn dependency:go-offline
 
 # Expose port
-EXPOSE 8082
+EXPOSE 8988
 
 # Run the application
 CMD ["mvn", "spring-boot:run"]
