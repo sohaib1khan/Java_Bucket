@@ -1,0 +1,9 @@
+touch .dockerignore
+```
+
+**Type:**
+```
+target/
+.git/
+.gitignore
+*.class
