@@ -70,7 +70,7 @@ Todo/
 
 ## Quick Start
 
-### **Option 1: Docker (Recommended)** 🐳
+### **Option 1: Docker (Recommended)**
 
 ```bash
 # 1. Clone the repository
@@ -502,7 +502,7 @@ spring.thymeleaf.cache=false
 
 ---
 
-## 💡 Common Pitfalls & Solutions
+## Common Pitfalls & Solutions
 
 ### **Issue: Port Already in Use**
 **Error:** `Port 8082 was already in use`
