@@ -1,13 +1,13 @@
-# 🏦 Banking With Java
+# Banking With Java
 
-A simple banking application built with **pure Java** to demonstrate fundamental programming concepts: **variables, methods, objects, and classes**. Perfect for developers coming from Python or learning Java basics!
+A simple banking application built with **pure Java** to demonstrate fundamental programming concepts: **variables, methods, objects, and classes**. Perfect for developers coming from Python or learning Java basics.
 
 [![Java](https://img.shields.io/badge/Java-17-orange)](https://www.oracle.com/java/)
 [![Pure Java](https://img.shields.io/badge/Framework-None-blue)](https://www.java.com/)
 
 ---
 
-## 🎯 What This Project Does
+## Overview
 
 A command-line banking application that demonstrates:
 - Creating bank accounts with account numbers, owner names, and balances
@@ -22,12 +22,12 @@ A command-line banking application that demonstrates:
 
 ## Features
 
-- ✅ **Account Creation** - Initialize accounts with owner details
-- ✅ **Deposit Validation** - Only accept positive amounts
-- ✅ **Withdrawal Validation** - Check sufficient funds before withdrawing
-- ✅ **Balance Inquiry** - Get current account balance
-- ✅ **Account Display** - Show formatted account information
-- ✅ **Multiple Accounts** - Manage multiple accounts simultaneously
+- **Account Creation** - Initialize accounts with owner details
+- **Deposit Validation** - Only accept positive amounts
+- **Withdrawal Validation** - Check sufficient funds before withdrawing
+- **Balance Inquiry** - Get current account balance
+- **Account Display** - Show formatted account information
+- **Multiple Accounts** - Manage multiple accounts simultaneously
 
 ---
 
@@ -55,7 +55,7 @@ This project teaches:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Banking_With_Java/
@@ -106,7 +106,7 @@ java -cp src/main/java com.banking.BankingApp
 
 ---
 
-## 📖 Code Walkthrough
+## Code Walkthrough
 
 ### Account Class (`Account.java`)
 
@@ -187,7 +187,7 @@ def deposit(self, amount: float) -> str:
 
 ---
 
-## 🐍 Java vs Python - Complete Comparison
+## Java vs Python - Complete Comparison
 
 | Concept | Python | Java | Purpose |
 |---------|--------|------|---------|
@@ -208,7 +208,7 @@ def deposit(self, amount: float) -> str:
 
 ---
 
-## 🎓 Key Java Concepts Explained
+## Key Java Concepts Explained
 
 ### 1. Static Typing
 
@@ -256,7 +256,7 @@ def deposit(self, amount: float) -> str:
 
 ---
 
-## 📝 Example Output
+## Example Output
 
 ```
 ===================================
@@ -305,25 +305,25 @@ Balance: $500.0
 
 ---
 
-## 💡 Common Pitfalls (Python Devs Learning Java)
+## Common Pitfalls (Python Devs Learning Java)
 
 ### 1. Forgetting Semicolons
 ```java
-// ❌ Wrong
+// Wrong
 System.out.println("Hello")
 
-// ✅ Correct
+// Correct
 System.out.println("Hello");
 ```
 
 ### 2. Forgetting Braces
 ```java
-// ❌ Wrong (compiles but dangerous)
+// Wrong (compiles but dangerous)
 if (amount > 0)
     balance += amount;
     System.out.println("Done");  // Always runs!
 
-// ✅ Correct
+// Correct
 if (amount > 0) {
     balance += amount;
     System.out.println("Done");
@@ -332,9 +332,9 @@ if (amount > 0) {
 
 ### 3. Using Python String Formatting
 ```java
-// ❌ Wrong
+// Wrong
 System.out.println(f"Balance: {balance}");  // f-strings don't exist
 
-// ✅ Correct
+// Correct
 System.out.println("Balance: " + balance);
 ```
