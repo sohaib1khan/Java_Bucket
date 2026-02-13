@@ -1,10 +1,10 @@
-# Java Spring Boot for Python Developers 🐍 → ☕
+# Java Spring Boot for Python Developers
 
 A beginner-friendly guide for Python developers learning Java Spring Boot. If you know Flask, you'll understand Spring Boot!
 
 ---
 
-## 📚 Table of Contents
+## Table of Contents
 
 - [Quick Comparison](#quick-comparison)
 - [Project Setup](#project-setup)
@@ -291,6 +291,7 @@ public class GreetingController {
 **Python equivalent:**
 ```python
 @app.route("/greet")         # Decorator for routing
+
 def greet():                 # Function to handle request
     pass
 ```
@@ -444,7 +445,7 @@ database.url=${DATABASE_URL}
 
 ---
 
-## Key Takeaways 🎯
+## Key Takeaways
 
 1. **Java is verbose** - More boilerplate, but very structured
 2. **Strong typing** - Must declare types: `String name`, `int age`
@@ -499,5 +500,3 @@ Once you're comfortable with the basics, explore:
 - [Spring Boot Docs](https://spring.io/projects/spring-boot)
 - [Spring Initializr](https://start.spring.io/)
 - [Java Syntax Cheat Sheet](https://introcs.cs.princeton.edu/java/11cheatsheet/)
-
----
