@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    
+    <modelVersion>4.0.0</modelVersion>
+    
+    <!-- Parent: Spring Boot starter -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.10</version>
+    </parent>
+    
+    <!-- Project info -->
+    <groupId>com.piggybank</groupId>
+    <artifactId>expensetracker</artifactId>
+    <version>1.0.0</version>
+    <name>Expense Tracker</name>
+    <description>Track your expenses and manage your budget</description>
+    
+    <!-- Java version -->
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    
+    <!-- Dependencies (like requirements.txt in Python) -->
+    <dependencies>
+        
+        <!-- Spring Web: For creating web apps -->
+        <!-- Python equivalent: flask -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <!-- Thymeleaf: Template engine -->
+        <!-- Python equivalent: Jinja2 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        
+        <!-- Spring Data JPA: Database ORM -->
+        <!-- Python equivalent: SQLAlchemy -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        
+        <!--PostgreSQL Database Driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- H2 Database: In-memory database (easy to start with) -->
+        <!-- Python equivalent: SQLite -->
+        <!-- File-based, no server needed, perfect for development! -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- Validation: For form validation -->
+        <!-- Python equivalent: WTForms validators -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        
+    </dependencies>
+    
+    <!-- Build plugin -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+    
+</project>
