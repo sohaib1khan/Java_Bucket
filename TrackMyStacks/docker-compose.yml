@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  trackmystacks:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trackmystacks-app
+    ports:
+      - "8785:8785"
+    volumes:
+      # Mount data directory for H2 database persistence
+      - ./docker-data:/app/data
+    environment:
+      # Optional: Override settings via environment variables
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/trackmystacks
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SERVER_PORT=8785
+    restart: unless-stopped
+    networks:
+      - trackmystacks-network
+
+networks:
+  trackmystacks-network:
+    driver: bridge
