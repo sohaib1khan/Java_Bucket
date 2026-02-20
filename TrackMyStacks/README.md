@@ -134,7 +134,7 @@ Password: admin123
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/sohaib1khan/Java_Bucket.git
 cd TrackMyStacks
 ```
 
