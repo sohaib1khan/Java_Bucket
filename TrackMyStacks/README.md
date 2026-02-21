@@ -1,6 +1,3 @@
-**Here's your updated README.md with all the new features:**
-
-```markdown
 # TrackMyStacks
 
 A secure, full-stack personal finance tracking application built with Spring Boot and modern web technologies. Features a beautiful animated UI, mobile-responsive design, and comprehensive expense management.
@@ -591,6 +588,4 @@ docker-compose up -d
 - Role-based access control
 
 ```
-
----
 
