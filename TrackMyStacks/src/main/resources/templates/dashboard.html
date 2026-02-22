@@ -108,33 +108,90 @@
             font-weight: 600;
         }
         
-        .total-box {
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: 16px;
-            text-align: center;
+        /* ===== Stats Row ===== */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3); }
+            50% { transform: scale(1.02); box-shadow: 0 12px 40px rgba(59, 130, 246, 0.5); }
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
             margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+        }
+
+        .stat-tile {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-tile:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-tile-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-color: transparent;
             animation: pulse 3s ease-in-out infinite;
         }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
+
+        .stat-tile-surplus {
+            border-color: rgba(52, 211, 153, 0.4);
+            background: rgba(16, 185, 129, 0.08);
         }
-        
-        .total-box h3 {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-bottom: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 1px;
+
+        .stat-tile-deficit {
+            border-color: rgba(248, 113, 113, 0.4);
+            background: rgba(239, 68, 68, 0.08);
         }
-        
-        .total-box .amount {
-            font-size: 3rem;
+
+        .stat-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.6rem;
+        }
+
+        .stat-tile-primary .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-value {
+            font-size: 1.9rem;
             font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1;
+            margin-bottom: 0.4rem;
+        }
+
+        .stat-tile-primary .stat-value {
+            color: white;
+        }
+
+        .stat-sub {
+            font-size: 0.78rem;
+            color: #64748b;
+            line-height: 1.4;
+            margin-top: 0.3rem;
+        }
+
+        .stat-tile-primary .stat-sub {
+            color: rgba(255, 255, 255, 0.65);
         }
         
         .form-grid {
@@ -532,12 +589,12 @@
                 margin-bottom: 1.25rem;
             }
             
-            .total-box {
-                padding: 1.5rem;
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
             }
-            
-            .total-box .amount {
-                font-size: 2.5rem;
+
+            .stat-value {
+                font-size: 1.5rem;
             }
             
             .form-grid {
@@ -579,9 +636,13 @@
             .navbar h1 {
                 font-size: 1.1rem;
             }
-            
-            .total-box .amount {
-                font-size: 2rem;
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-value {
+                font-size: 1.6rem;
             }
             
             .expense-card-amount {
@@ -911,9 +972,65 @@
         <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
         <div th:if="${backupError}" class="alert alert-success alert-error-user" th:text="${backupError}"></div>
         
-        <div class="total-box">
-            <h3>TOTAL EXPENSES</h3>
-            <div class="amount" th:text="'$' + ${#numbers.formatDecimal(total, 1, 2)}">$0.00</div>
+        <!-- ============================================================ -->
+        <!-- Stats Row                                                     -->
+        <!-- ============================================================ -->
+        <div class="stats-row">
+
+            <!-- This Month's Spend -->
+            <div class="stat-tile stat-tile-primary">
+                <div class="stat-icon">💸</div>
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" th:text="'$' + ${#numbers.formatDecimal(thisMonthExpenses, 1, 2)}">$0.00</div>
+                <div class="stat-sub">total expenses</div>
+            </div>
+
+            <!-- vs Last Month -->
+            <div class="stat-tile">
+                <div class="stat-icon">📅</div>
+                <div class="stat-label">Last Month</div>
+                <div class="stat-value" th:text="'$' + ${#numbers.formatDecimal(lastMonthExpenses, 1, 2)}" style="color:#94a3b8;">$0.00</div>
+                <div class="stat-sub">
+                    <span th:if="${lastMonthExpenses == 0}" style="color:#475569;">no data yet</span>
+                    <span th:if="${spendingUp}" style="color:#f87171;">↑ $<span th:text="${#numbers.formatDecimal(lastMonthDiff, 1, 2)}"></span> more</span>
+                    <span th:if="${spendingDown}" style="color:#34d399;">↓ $<span th:text="${#numbers.formatDecimal(lastMonthDiff, 1, 2)}"></span> less</span>
+                    <span th:if="${lastMonthExpenses > 0 and !spendingUp and !spendingDown}" style="color:#94a3b8;">same as last month</span>
+                </div>
+            </div>
+
+            <!-- Income This Month -->
+            <div class="stat-tile">
+                <div class="stat-icon">💵</div>
+                <div class="stat-label">Income This Month</div>
+                <div class="stat-value" th:if="${thisMonthIncome > 0}" th:text="'$' + ${#numbers.formatDecimal(thisMonthIncome, 1, 2)}" style="color:#34d399;">$0.00</div>
+                <div class="stat-value" th:if="${thisMonthIncome == 0}" style="color:#475569;">—</div>
+                <div class="stat-sub" th:if="${thisMonthIncome == 0}" style="color:#475569;">add income in paychecks</div>
+                <div class="stat-sub" th:if="${thisMonthIncome > 0}">logged this month</div>
+            </div>
+
+            <!-- Monthly Net -->
+            <div class="stat-tile"
+                 th:classappend="${netPositive} ? ' stat-tile-surplus' : (${netNegative} ? ' stat-tile-deficit' : '')">
+                <div class="stat-icon">
+                    <span th:if="${!netPositive and !netNegative}">📊</span>
+                    <span th:if="${netPositive}">🎉</span>
+                    <span th:if="${netNegative}">⚠️</span>
+                </div>
+                <div class="stat-label">Monthly Net</div>
+                <div th:if="${!netPositive and !netNegative}">
+                    <div class="stat-value" style="color:#475569;">—</div>
+                    <div class="stat-sub" style="color:#475569;">log income to see net</div>
+                </div>
+                <div th:if="${netPositive}">
+                    <div class="stat-value" th:text="'$' + ${#numbers.formatDecimal(netAmount, 1, 2)}" style="color:#34d399;">$0.00</div>
+                    <div class="stat-sub" style="color:#34d399;">saved this month</div>
+                </div>
+                <div th:if="${netNegative}">
+                    <div class="stat-value" th:text="'$' + ${#numbers.formatDecimal(netAmount, 1, 2)}" style="color:#f87171;">$0.00</div>
+                    <div class="stat-sub" style="color:#f87171;">over budget</div>
+                </div>
+            </div>
+
         </div>
         
         <div class="card">
