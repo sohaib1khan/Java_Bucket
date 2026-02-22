@@ -365,93 +365,7 @@
             margin-bottom: 0.5rem;
         }
 
-        /* Backup section */
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
-
-        .btn-success:hover {
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-        }
-
-        .btn-warning:hover {
-            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
-        }
-
-        .backup-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-
-        .backup-panel {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            border-radius: 12px;
-            padding: 1.5rem;
-        }
-
-        .backup-panel h3 {
-            color: #f1f5f9;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-        }
-
-        .backup-panel p {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin-bottom: 1.25rem;
-        }
-
-        .file-input-wrapper {
-            position: relative;
-            display: block;
-            margin-bottom: 1rem;
-        }
-
-        .file-input-wrapper input[type="file"] {
-            width: 100%;
-            padding: 0.875rem;
-            border: 2px dashed rgba(148, 163, 184, 0.3);
-            border-radius: 10px;
-            font-size: 0.95rem;
-            background: rgba(15, 23, 42, 0.5);
-            color: #94a3b8;
-            cursor: pointer;
-            transition: border-color 0.3s ease;
-        }
-
-        .file-input-wrapper input[type="file"]:hover {
-            border-color: rgba(59, 130, 246, 0.5);
-        }
-
-        .backup-warning {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.625rem;
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.25);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            color: #fbbf24;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-bottom: 1rem;
-        }
-
         @media (max-width: 768px) {
-            .backup-grid {
-                grid-template-columns: 1fr;
-            }
-
             .navbar {
                 padding: calc(1rem + env(safe-area-inset-top)) 1rem 1rem 1rem;
             }
@@ -525,53 +439,6 @@
             <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
             <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
 
-            <!-- ============================================================ -->
-            <!-- Backup & Restore                                              -->
-            <!-- ============================================================ -->
-            <div class="card">
-                <h2>&#128190; Backup &amp; Restore</h2>
-                <div class="backup-grid">
-
-                    <!-- Export -->
-                    <div class="backup-panel">
-                        <h3>Export Backup</h3>
-                        <p>
-                            Downloads a <code>.json</code> file containing every user, category, and expense.
-                            Password hashes are preserved so credentials survive a restore.
-                        </p>
-                        <a href="/admin/backup/export"
-                           class="btn btn-success"
-                           style="display:inline-block; text-decoration:none;">
-                            &#8659;&nbsp;Download Backup
-                        </a>
-                    </div>
-
-                    <!-- Import -->
-                    <div class="backup-panel">
-                        <h3>Import Backup</h3>
-                        <div class="backup-warning">
-                            &#9888;&nbsp;
-                            <span>
-                                <strong>Warning:</strong> importing will wipe all current expenses and
-                                categories, then restore everything from the file. Users are upserted
-                                (not deleted) so your current session stays active.
-                            </span>
-                        </div>
-                        <form th:action="@{/admin/backup/import}"
-                              method="post"
-                              enctype="multipart/form-data"
-                              onsubmit="return confirm('This will replace your categories and all expenses with the backup data. Continue?');">
-                            <div class="file-input-wrapper">
-                                <input type="file" name="backupFile" accept=".json" required>
-                            </div>
-                            <button type="submit" class="btn btn-warning">
-                                &#8657;&nbsp;Restore from Backup
-                            </button>
-                        </form>
-                    </div>
-
-                </div>
-            </div>
 
             <!-- Create Category -->
             <div class="card">

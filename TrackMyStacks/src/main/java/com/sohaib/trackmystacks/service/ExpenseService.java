@@ -65,4 +65,12 @@ public class ExpenseService {
         
         return expenseRepository.save(expense);
     }
+
+    public void deleteAllExpensesByUser(User user) {
+        expenseRepository.deleteByUser(user);
+    }
+
+    public Expense saveExpense(Expense expense) {
+        return expenseRepository.save(expense);
+    }
 }

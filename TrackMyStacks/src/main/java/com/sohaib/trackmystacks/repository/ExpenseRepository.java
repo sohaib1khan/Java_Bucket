@@ -33,4 +33,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     // Calculate total by user and date range
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.user = :user AND e.date BETWEEN :startDate AND :endDate")
     BigDecimal getTotalByUserAndDateRange(User user, LocalDate startDate, LocalDate endDate);
+
+    // Delete all expenses belonging to a specific user (used during user-level restore)
+    void deleteByUser(User user);
 }

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import com.sohaib.trackmystacks.model.User;
 import com.sohaib.trackmystacks.service.CategoryService;
 import com.sohaib.trackmystacks.service.ExpenseService;
+import com.sohaib.trackmystacks.service.PaycheckService;
 import com.sohaib.trackmystacks.service.UserService;
 
 @Controller
@@ -22,6 +23,9 @@ public class DashboardController {
     
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private PaycheckService paycheckService;
     
     @GetMapping("/dashboard")
     public String dashboard(Authentication auth, Model model) {
@@ -32,6 +36,8 @@ public class DashboardController {
         model.addAttribute("expenses", expenseService.getAllExpensesByUser(user));
         model.addAttribute("total", expenseService.getTotalByUser(user));
         model.addAttribute("categories", categoryService.getAllCategories());
+        model.addAttribute("paychecks", paycheckService.getAllPaychecksByUser(user));
+        model.addAttribute("monthlyData", paycheckService.getMonthlyComparison(user, 6));
         
         return "dashboard";
     }
