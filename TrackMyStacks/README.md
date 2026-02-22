@@ -1,591 +1,554 @@
 # TrackMyStacks
 
-A secure, full-stack personal finance tracking application built with Spring Boot and modern web technologies. Features a beautiful animated UI, mobile-responsive design, and comprehensive expense management.
+A self-hosted personal finance tracker built with Spring Boot.
+Track expenses, manage categories, and control users from a web interface.
+No cloud accounts. No subscriptions. Your data stays on your machine.
 
-## Overview
+---
 
-TrackMyStacks is a multi-user expense tracking application featuring user authentication, role-based access control, and an animated, accessible user interface. The application allows users to track their personal expenses with recurring expense support, while administrators can manage users and categories through a dedicated admin panel.
+## The one thing you need to know
 
-## Features
+| What | URL |
+|---|---|
+| Login page | `http://localhost:8785/login` |
+| Main dashboard (after login) | `http://localhost:8785/dashboard` |
+| Admin panel (admin only) | `http://localhost:8785/admin` |
 
-### Core Functionality
-- User authentication with secure password hashing (BCrypt)
-- Role-based access control (Admin and User roles)
-- Personal expense tracking and management
-- Real-time expense totals and calculations
-- Edit and delete expense operations
-- Admin panel for user and category management
-- Recurring expense tracking with visual indicators
-- Responsive design (desktop table view, mobile card view)
-- Beautiful animated user interface optimized for accessibility
-
-### Security
-- Spring Security integration
-- Password hashing with BCrypt
-- Session management
-- CSRF protection (disabled for development)
-- Admin-only routes protection
-
-### User Management
-- Admin-controlled user creation (no public signup)
-- User list with role indicators
-- User deletion capability
-- Separate data isolation per user
-
-### Expense Management
-- Add expenses with amount, category, date, description, and recurring flag
-- Edit existing expenses with modal popup interface
-- View all personal expenses in chronological order
-- Delete expenses with confirmation
-- Automatic total calculation
-- Dynamic category system (admin-controlled)
-- Date filtering support
-- Recurring expense indicators (visual icon on recurring items)
-
-### Category Management
-- Admin-controlled category creation and deletion
-- Dynamic category dropdown in forms
-- All users share the same category list
-- Default categories pre-populated on first run
-
-### Mobile Responsive Design
-- Adaptive layouts for all screen sizes
-- Desktop: Full table view with all columns
-- Mobile: Card-based layout with large touch targets
-- Optimized for single-eye use (high contrast, large text, calm animations)
-- Touch-friendly buttons (44px minimum)
-- Vertical form stacking on mobile devices
-
-## Technology Stack
-
-### Backend
-- Java 17
-- Spring Boot 3.2.2
-- Spring Security
-- Spring Data JPA
-- Hibernate
-- H2 Database (file-based)
-
-### Frontend
-- Thymeleaf templating engine
-- HTML5/CSS3
-- Vanilla JavaScript
-- CSS Grid and Flexbox
-- Responsive design with media queries
-- CSS animations
-
-### DevOps
-- Docker
-- Docker Compose
-- Maven for build management
-
-## Project Structure
+Default credentials on first run:
 
 ```
+Username: admin
+Password: admin123
+```
+
+> Change the admin password immediately after first login.
+
+---
+
+## How the application works — big picture
+
+```mermaid
+flowchart LR
+    subgraph USERS["People using the app"]
+        ADMIN["Admin user\n(manages users + categories)"]
+        USER["Regular user\n(tracks own expenses only)"]
+    end
+
+    subgraph APP["Spring Boot App  (port 8785)"]
+        direction TB
+        LOGIN["/login\nAuthentication"]
+        DASH["/dashboard\nExpense view + add/edit/delete"]
+        ADMIN_PANEL["/admin\nUser management + category management"]
+        API_EXP["/expenses/*\nAdd, update, delete expenses"]
+        SECURITY["Spring Security\nSession auth + role checks"]
+    end
+
+    subgraph DATA["Persistent Storage"]
+        direction TB
+        DB["H2 Database\n(file: docker-data/)"]
+        TABLES["Tables:\nusers / categories / expenses"]
+    end
+
+    ADMIN -->|"HTTPS via reverse proxy"| LOGIN
+    USER  -->|"HTTPS via reverse proxy"| LOGIN
+    LOGIN --> SECURITY
+    SECURITY -->|"ROLE_ADMIN"| ADMIN_PANEL
+    SECURITY -->|"ROLE_USER or ROLE_ADMIN"| DASH
+    DASH --> API_EXP
+    API_EXP --> DB
+    ADMIN_PANEL --> DB
+    DB --> TABLES
+```
+
+---
+
+## Who can do what — role comparison
+
+```mermaid
+flowchart TB
+    subgraph ADMIN_ROLE["Role: ADMIN"]
+        A1["View own expenses"]
+        A2["Add / edit / delete own expenses"]
+        A3["View admin panel"]
+        A4["Create new users"]
+        A5["Delete users"]
+        A6["Add categories"]
+        A7["Delete categories"]
+    end
+
+    subgraph USER_ROLE["Role: USER"]
+        U1["View own expenses"]
+        U2["Add / edit / delete own expenses"]
+        U3["No admin panel access"]
+    end
+```
+
+Key rule: **Users only ever see their own expenses.** An admin can access the admin panel but their expense data is still isolated to their own account.
+
+---
+
+## Login and session flow
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant SpringSecurity as Spring Security
+    participant DB as H2 Database
+
+    Browser->>SpringSecurity: GET /login
+    SpringSecurity-->>Browser: Login form
+
+    Browser->>SpringSecurity: POST /login (username + password)
+    SpringSecurity->>DB: Load user record by username
+    DB-->>SpringSecurity: User record (hashed password)
+    SpringSecurity->>SpringSecurity: BCrypt.verify(input, hash)
+
+    alt Password correct
+        SpringSecurity-->>Browser: 302 Redirect to /dashboard + Set JSESSIONID cookie
+    else Password wrong
+        SpringSecurity-->>Browser: 302 Redirect to /login?error
+    end
+
+    Browser->>SpringSecurity: GET /dashboard (sends JSESSIONID cookie)
+    SpringSecurity->>SpringSecurity: Validate session + check role
+    SpringSecurity-->>Browser: Dashboard page
+
+    Browser->>SpringSecurity: POST /logout
+    SpringSecurity->>SpringSecurity: Invalidate session + delete cookie
+    SpringSecurity-->>Browser: 302 Redirect to /login
+```
+
+---
+
+## Expense lifecycle — what happens when you add, edit, or delete
+
+```mermaid
+sequenceDiagram
+    participant You as You (Browser)
+    participant Controller as ExpenseController
+    participant Service as ExpenseService
+    participant DB as H2 Database
+
+    Note over You,DB: Add expense
+    You->>Controller: POST /expenses/add (amount, category, date, description, recurring)
+    Controller->>Service: saveExpense(currentUser, formData)
+    Service->>DB: INSERT INTO expenses (user_id, amount, ...)
+    DB-->>Service: Saved
+    Controller-->>You: 302 Redirect to /dashboard
+
+    Note over You,DB: Edit expense
+    You->>Controller: POST /expenses/update/{id} (modified fields)
+    Controller->>Service: updateExpense(id, formData)
+    Service->>DB: UPDATE expenses WHERE id=? AND user_id=?
+    DB-->>Service: Updated
+    Controller-->>You: 302 Redirect to /dashboard
+
+    Note over You,DB: Delete expense
+    You->>Controller: POST /expenses/delete/{id}
+    Controller->>Service: deleteExpense(id, currentUser)
+    Service->>DB: DELETE FROM expenses WHERE id=? AND user_id=?
+    DB-->>Service: Deleted
+    Controller-->>You: 302 Redirect to /dashboard
+```
+
+---
+
+## Database schema — tables and relationships
+
+```mermaid
+erDiagram
+    USERS {
+        bigint id PK
+        varchar username
+        varchar email
+        varchar password
+        boolean is_admin
+        timestamp created_at
+    }
+
+    CATEGORIES {
+        bigint id PK
+        varchar name
+        timestamp created_at
+    }
+
+    EXPENSES {
+        bigint id PK
+        bigint user_id FK
+        decimal amount
+        varchar category
+        varchar description
+        date expense_date
+        boolean recurring
+        timestamp created_at
+    }
+
+    USERS ||--o{ EXPENSES : "owns"
+    CATEGORIES ||--o{ EXPENSES : "categorises"
+```
+
+Notes:
+- `EXPENSES.user_id` links each expense to exactly one user
+- `CATEGORIES` is global — all users share the same list, only admins can modify it
+- Deleting a category does **not** delete expenses that used it — the name is stored as a string directly on the expense row
+
+---
+
+## How a request travels through the app
+
+```mermaid
+flowchart TD
+    BROWSER["Browser sends request"]
+    FILTER["Spring Security Filter\nchecks session cookie on every request"]
+    AUTH{"Is user\nauthenticated?"}
+    ROLE{"Does user role\nallow this route?"}
+    CONTROLLER["Controller\nAuthController / DashboardController\nExpenseController / AdminController"]
+    SERVICE["Service Layer\nbusiness logic + data rules"]
+    REPO["Repository Layer\nJPA queries against H2"]
+    TEMPLATE["Thymeleaf Template\nrenders HTML and returns it"]
+    REDIRECT["Redirect to /login"]
+    FORBIDDEN["403 Forbidden"]
+
+    BROWSER --> FILTER
+    FILTER --> AUTH
+    AUTH -- No --> REDIRECT
+    AUTH -- Yes --> ROLE
+    ROLE -- "Allowed" --> CONTROLLER
+    ROLE -- "Not allowed for this role" --> FORBIDDEN
+    CONTROLLER --> SERVICE
+    SERVICE --> REPO
+    REPO --> SERVICE
+    SERVICE --> CONTROLLER
+    CONTROLLER --> TEMPLATE
+    TEMPLATE --> BROWSER
+```
+
+---
+
+## Component map — what each file does
+
+```mermaid
+flowchart LR
+    subgraph CONFIG["config/"]
+        SC["SecurityConfig.java\n- Which routes need auth\n- Login + logout URL config\n- BCrypt password encoder\n- Session rules"]
+        DI["DataInitializer.java\n- Runs once on startup\n- Creates default admin user\n- Creates default categories"]
+    end
+
+    subgraph CONTROLLERS["controller/"]
+        AC["AuthController.java\nGET /login"]
+        DC["DashboardController.java\nGET /dashboard\nLoads expenses + categories"]
+        EC["ExpenseController.java\nPOST /expenses/add\nPOST /expenses/update/{id}\nPOST /expenses/delete/{id}"]
+        ADC["AdminController.java\nGET /admin\nPOST /admin/create-user\nPOST /admin/delete-user/{id}\nPOST /admin/create-category\nPOST /admin/delete-category/{id}"]
+    end
+
+    subgraph SERVICES["service/"]
+        ES["ExpenseService.java\nExpense CRUD + ownership enforcement"]
+        US["UserService.java\nCreate/delete users + BCrypt encoding"]
+        CS["CategoryService.java\nAdd/delete categories"]
+        CU["CustomUserDetailsService.java\nLoads user from DB for Spring Security"]
+    end
+
+    subgraph MODELS["model/"]
+        UM["User.java\nid, username, email\npassword (hashed), isAdmin"]
+        EM["Expense.java\nid, userId, amount\ncategory, description\nexpenseDate, recurring"]
+        CM["Category.java\nid, name"]
+    end
+
+    subgraph REPOS["repository/"]
+        UR["UserRepository.java"]
+        ER["ExpenseRepository.java"]
+        CR["CategoryRepository.java"]
+    end
+
+    subgraph TEMPLATES["templates/"]
+        LT["login.html\nLogin form + animated background"]
+        DT["dashboard.html\nExpense table (desktop)\nExpense cards (mobile)\nAdd form + edit modal"]
+        AT["admin/panel.html\nUser list + create/delete\nCategory list + create/delete"]
+    end
+
+    CONTROLLERS --> SERVICES
+    SERVICES --> REPOS
+    REPOS --> MODELS
+    CONTROLLERS --> TEMPLATES
+    CONFIG --> CONTROLLERS
+```
+
+---
+
+## Project file map
+
+```text
 TrackMyStacks/
-├── docker-compose.yml          # Docker Compose configuration
-├── Dockerfile                  # Docker image definition
-├── pom.xml                     # Maven dependencies
-└── src/main/
-    ├── java/com/sohaib/trackmystacks/
-    │   ├── config/
-    │   │   ├── DataInitializer.java       # Initial admin user and category creation
-    │   │   └── SecurityConfig.java        # Security configuration
-    │   ├── controller/
-    │   │   ├── AdminController.java       # Admin panel endpoints (users + categories)
-    │   │   ├── AuthController.java        # Login/logout endpoints
-    │   │   ├── DashboardController.java   # Main dashboard
-    │   │   └── ExpenseController.java     # Expense CRUD operations
-    │   ├── model/
-    │   │   ├── Category.java              # Category entity
-    │   │   ├── Expense.java               # Expense entity (with recurring field)
-    │   │   └── User.java                  # User entity
-    │   ├── repository/
-    │   │   ├── CategoryRepository.java    # Category data access
-    │   │   ├── ExpenseRepository.java     # Expense data access
-    │   │   └── UserRepository.java        # User data access
-    │   ├── service/
-    │   │   ├── CategoryService.java           # Category business logic
-    │   │   ├── CustomUserDetailsService.java  # Authentication service
-    │   │   ├── ExpenseService.java            # Expense business logic
-    │   │   └── UserService.java               # User management
-    │   └── TrackMyStacksApplication.java  # Main application entry
-    └── resources/
-        ├── application.properties         # Application configuration
-        └── templates/
-            ├── admin/panel.html          # Admin panel UI (users + categories)
-            ├── dashboard.html            # Main dashboard UI (responsive)
-            └── login.html                # Login page UI (animated)
+|
++-- docker-compose.yml              <- Start/stop/build the app here
++-- Dockerfile                      <- How the container image is built
++-- pom.xml                         <- Java dependencies (Spring Boot, H2, etc.)
+|
++-- docker-data/                    <- PERSISTED (created automatically by Docker)
+|   +-- trackmystacks.mv.db         <- H2 database (all data lives here)
+|
++-- src/main/
+    +-- java/com/sohaib/trackmystacks/
+    |   |
+    |   +-- TrackMyStacksApplication.java   <- Main entry point (do not touch)
+    |   |
+    |   +-- config/
+    |   |   +-- SecurityConfig.java         <- Route protection, login/logout config
+    |   |   +-- DataInitializer.java        <- Default admin + categories on first run
+    |   |
+    |   +-- controller/
+    |   |   +-- AuthController.java         <- /login page
+    |   |   +-- DashboardController.java    <- /dashboard page
+    |   |   +-- ExpenseController.java      <- /expenses/* (add, edit, delete)
+    |   |   +-- AdminController.java        <- /admin page (users + categories)
+    |   |
+    |   +-- model/
+    |   |   +-- User.java                   <- User data shape
+    |   |   +-- Expense.java                <- Expense data shape
+    |   |   +-- Category.java               <- Category data shape
+    |   |
+    |   +-- repository/
+    |   |   +-- UserRepository.java         <- DB queries for users
+    |   |   +-- ExpenseRepository.java      <- DB queries for expenses
+    |   |   +-- CategoryRepository.java     <- DB queries for categories
+    |   |
+    |   +-- service/
+    |       +-- UserService.java                <- User create/delete + password hash
+    |       +-- ExpenseService.java             <- Expense CRUD + ownership check
+    |       +-- CategoryService.java            <- Category add/delete
+    |       +-- CustomUserDetailsService.java   <- Plugs users into Spring Security
+    |
+    +-- resources/
+        +-- application.properties          <- Port, DB path, Thymeleaf settings
+        +-- templates/
+            +-- login.html                  <- Login page
+            +-- dashboard.html              <- Main expense view (responsive)
+            +-- admin/
+                +-- panel.html              <- Admin management page
 ```
 
-## Prerequisites
+---
 
-### Local Development
-- Java 17 or higher
-- Maven 3.6+
+## Quick start
 
-### Docker Deployment
-- Docker
-- Docker Compose
+### Option A — Docker (recommended)
 
-## Installation and Setup
-
-### Option 1: Docker Deployment (Recommended)
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/sohaib1khan/Java_Bucket.git
 cd TrackMyStacks
-```
 
-2. Build and run with Docker Compose:
-```bash
-docker-compose up -d --build
-```
+# Build image and start container
+docker compose up -d --build
 
-3. Access the application:
-```
+# Watch startup logs
+docker compose logs -f
+
+# Open in browser
 http://localhost:8785/login
 ```
 
-4. Login with default credentials:
-```
-Username: admin
-Password: admin123
-```
+### Option B — Local Maven (no Docker)
 
-### Option 2: Local Development
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/sohaib1khan/Java_Bucket.git
 cd TrackMyStacks
-```
-
-2. Build the project:
-```bash
-mvn clean install
-```
-
-3. Run the application:
-```bash
 mvn spring-boot:run
-```
 
-4. Access the application:
-```
+# Open in browser
 http://localhost:8785/login
 ```
 
-## Configuration
+Requirements for Option B: Java 17+, Maven 3.6+
 
-### Application Properties
+---
 
-Key configuration settings in `src/main/resources/application.properties`:
-
-```properties
-# Server Configuration
-server.port=8785
-
-# Database Configuration (H2)
-spring.datasource.url=jdbc:h2:file:/app/data/trackmystacks
-spring.datasource.driverClassName=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-
-# JPA/Hibernate
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-# H2 Console (Development Only)
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
-
-# Thymeleaf
-spring.thymeleaf.cache=false
-```
-
-### Docker Configuration
-
-The Docker setup includes:
-- Multi-stage build for optimized image size
-- Persistent volume mounting for database
-- Health checks
-- Port mapping (8785:8785)
-
-Volume mounting:
-```yaml
-volumes:
-  - ./docker-data:/app/data
-```
-
-## Database
-
-### H2 Database
-- File-based storage for persistence
-- Located at `/app/data/trackmystacks.mv.db` (Docker) or `./data/` (local)
-- Automatic schema generation and updates via Hibernate
-
-### Database Schema
-
-**Users Table:**
-```sql
-CREATE TABLE users (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    is_admin BOOLEAN,
-    created_at TIMESTAMP
-);
-```
-
-**Categories Table:**
-```sql
-CREATE TABLE categories (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(50) UNIQUE NOT NULL,
-    created_at TIMESTAMP
-);
-```
-
-**Expenses Table:**
-```sql
-CREATE TABLE expenses (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    category VARCHAR(50) NOT NULL,
-    description VARCHAR(255),
-    expense_date DATE NOT NULL,
-    recurring BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
-
-## Usage
-
-### Admin Functions
-
-1. **Access Admin Panel:**
-   - Login as admin user
-   - Click "Admin Panel" in navigation bar
-
-2. **Create New User:**
-   - Fill in username, email, and password
-   - Optionally check "Admin User?" for admin privileges
-   - Click "Create User"
-
-3. **Delete User:**
-   - View user list in admin panel
-   - Click "Delete" button for target user
-   - Confirm deletion
-
-4. **Manage Categories:**
-   - Enter new category name in the form
-   - Click "Add Category"
-   - Delete categories by clicking the X next to category name
-   - Note: Deleting a category doesn't delete expenses using that category
-
-### User Functions
-
-1. **Add Expense:**
-   - Enter amount, select category from dropdown
-   - Add description and date
-   - Check "Recurring" box for monthly bills (Netflix, rent, etc.)
-   - Click "Add" button
-
-2. **Edit Expense:**
-   - Click "Edit" button on any expense
-   - Modal popup appears with current values
-   - Modify any field including recurring status
-   - Click "Save Changes"
-
-3. **View Expenses:**
-   - Desktop: All expenses displayed in sortable table with recurring indicator
-   - Mobile: Expenses shown as cards with large, readable text
-   - Recurring expenses marked with green recycle icon (🔄)
-   - Total amount shown at top
-
-4. **Delete Expense:**
-   - Click "Delete" button on expense row/card
-   - Confirm deletion
-
-## Default Admin Account
-
-The application creates a default admin account on first startup:
+## Data persistence
 
 ```
-Username: admin
-Password: admin123
+docker-compose.yml maps:
+  ./docker-data  ->  /app/data  (inside the container)
+
+Database file: ./docker-data/trackmystacks.mv.db
 ```
 
-**Security Note:** Change the default admin password immediately in production environments.
+> If you delete `docker-data/`, all users, expenses, and categories are wiped.
+> The default admin account and default categories will be recreated on next startup.
 
-### Default Categories
+---
 
-Pre-populated categories on first run:
-- Food
-- Transport
-- Entertainment
-- Bills
-- Shopping
-- Health
-- Tech
-- Other
+## Default categories (pre-loaded on first run)
 
-Admins can add or remove categories as needed.
+```
+Food  |  Transport  |  Entertainment  |  Bills  |  Shopping  |  Health  |  Tech  |  Other
+```
 
-## Data Persistence
+Admins can add or remove categories from the admin panel at any time.
+Removing a category does **not** delete expenses that were tagged with it.
 
-### Docker Environment
-- Database stored in `./docker-data/` directory
-- Survives container restarts and rebuilds
-- To reset database: `rm -rf docker-data/`
+---
 
-### Local Environment
-- Database stored in `./data/` directory
-- Persistent across application restarts
+## All routes
 
-### Resetting Database After Schema Changes
+```
+Public (no login needed):
+  GET  /login                          Login form
+  POST /login                          Submit credentials
+  POST /logout                         End session
 
-If you encounter column errors after updates:
+Authenticated (any logged-in user):
+  GET  /                               Redirects to /dashboard
+  GET  /dashboard                      Your expenses
+  POST /expenses/add                   Add a new expense
+  POST /expenses/update/{id}           Edit an existing expense
+  POST /expenses/delete/{id}           Delete an expense
+
+Admin only (ROLE_ADMIN required):
+  GET  /admin                          Admin panel
+  POST /admin/create-user              Create a new user
+  POST /admin/delete-user/{id}         Delete a user
+  POST /admin/create-category          Add a category
+  POST /admin/delete-category/{id}     Remove a category
+```
+
+---
+
+## Useful Docker commands
 
 ```bash
-# Stop container
-docker-compose down
+# Start app (builds if no image exists)
+docker compose up -d --build
 
-# Delete database
-rm -rf docker-data/
+# Stop app
+docker compose down
 
-# Rebuild
-docker-compose up -d --build
-```
+# View live logs
+docker compose logs -f
 
-## Development
+# Restart without rebuild
+docker compose restart
 
-### Building the Project
+# Rebuild after code changes
+docker compose up -d --build
 
-```bash
-# Clean and compile
-mvn clean compile
-
-# Run tests
-mvn test
-
-# Package as JAR
-mvn clean package
-
-# Run application
-mvn spring-boot:run
-```
-
-### Docker Commands
-
-```bash
-# Build and start
-docker-compose up -d --build
-
-# View logs
-docker-compose logs -f
-
-# Stop application
-docker-compose down
-
-# Rebuild after changes
-docker-compose up -d --build
-
-# Access container shell
+# Open a shell inside the container
 docker exec -it trackmystacks-app sh
+
+# Check the app is responding
+curl http://localhost:8785/login
 ```
 
-## API Endpoints
-
-### Authentication
-- `GET /login` - Login page
-- `POST /login` - Login submission
-- `POST /logout` - Logout
-- `GET /` - Redirects to dashboard
-
-### Dashboard
-- `GET /dashboard` - Main dashboard (authenticated users)
-
-### Expenses
-- `POST /expenses/add` - Create new expense
-- `POST /expenses/delete/{id}` - Delete expense
-- `POST /expenses/update/{id}` - Update expense
-
-### Admin
-- `GET /admin` - Admin panel (admin only)
-- `POST /admin/create-user` - Create new user
-- `POST /admin/delete-user/{id}` - Delete user
-- `POST /admin/create-category` - Create new category
-- `POST /admin/delete-category/{id}` - Delete category
-
-## Mobile Responsive Design
-
-### Desktop View (768px+)
-- Full table layout with all columns
-- Horizontal form layout
-- Hover effects on rows
-- All features accessible
-
-### Mobile View (<768px)
-- Card-based expense display
-- Vertical form stacking
-- Large touch targets (44px minimum)
-- Full-width buttons
-- Optimized text sizes
-- Simplified navigation
+---
 
 ## Troubleshooting
 
-### Common Issues
-
-**Issue: Port 8785 already in use**
-```bash
-# Change port in application.properties
-server.port=8786
-
-# Or in docker-compose.yml
+### Port 8785 is already in use
+Change the left-side port in `docker-compose.yml`:
+```yaml
 ports:
   - "8786:8785"
 ```
 
-**Issue: Database locked**
+### Forgot admin password / locked out
 ```bash
-# Stop application
-docker-compose down
-
-# Remove database lock
-rm docker-data/trackmystacks.trace.db
-
-# Restart
-docker-compose up -d
-```
-
-**Issue: Column not found error (after adding recurring)**
-```bash
-# Reset database
-docker-compose down
+docker compose down
 rm -rf docker-data/
-docker-compose up -d --build
+docker compose up -d --build
+# Recreates admin/admin123 from scratch
 ```
 
-**Issue: Categories not showing in dropdown**
-- Check admin panel to verify categories exist
-- Refresh the page
-- Check browser console for errors
+### Database locked error
+```bash
+docker compose down
+rm -f docker-data/trackmystacks.trace.db
+docker compose up -d
+```
 
-**Issue: Modal not opening**
-- Check browser console for JavaScript errors
-- Ensure page fully loaded before clicking Edit
-- Try refreshing the page
+### Schema error / column not found after an update
+```bash
+docker compose down
+rm -rf docker-data/
+docker compose up -d --build
+```
 
-**Issue: Mobile view not working**
-- Clear browser cache
-- Check viewport meta tag in HTML
-- Test in actual mobile device, not just browser resize
+### Categories not showing in expense form
+- Go to `/admin` and verify at least one category exists
+- Hard refresh: `Ctrl + Shift + R`
 
-### H2 Console Access
+### Edit modal not opening
+- Open browser console (`F12`) and check for JavaScript errors
+- Make sure the page fully loaded before clicking Edit
 
-For debugging (development only):
-1. Access: `http://localhost:8785/h2-console`
-2. JDBC URL: `jdbc:h2:file:/app/data/trackmystacks`
-3. Username: `sa`
-4. Password: (empty)
+---
 
-## Security Considerations
+## H2 database console (development only)
 
-### Production Deployment
+Direct SQL browser for debugging:
 
-1. **Change default admin password immediately**
+```
+URL:       http://localhost:8785/h2-console
+JDBC URL:  jdbc:h2:file:/app/data/trackmystacks
+Username:  sa
+Password:  (leave blank)
+```
 
-2. **Disable H2 console:**
-   ```properties
-   spring.h2.console.enabled=false
-   ```
+Disable before production:
+```properties
+spring.h2.console.enabled=false
+```
 
-3. **Enable CSRF protection** in `SecurityConfig.java`
+---
 
-4. **Use environment variables for sensitive data**
+## Security summary
 
-5. **Implement HTTPS**
+| Area | Current setting |
+|---|---|
+| Password storage | BCrypt hashed — plain text never stored |
+| Session authentication | Cookie-based (JSESSIONID) |
+| Route protection | Spring Security filter on every request |
+| Admin routes | Requires ROLE_ADMIN |
+| Public user signup | Disabled — admin must create all accounts |
+| CSRF | Disabled (re-enable for production) |
+| Expense data isolation | Users can only read/write their own expenses |
+| H2 console | Enabled (disable before going public) |
 
-6. **Use production-grade database** (PostgreSQL, MySQL)
+---
 
-7. **Set strong password policies**
+## Production checklist
 
-8. **Add rate limiting**
+Before exposing this to the internet:
 
-9. **Implement session timeout**
+1. Change the default admin password
+2. Set `spring.h2.console.enabled=false` in `application.properties`
+3. Enable CSRF in `config/SecurityConfig.java`
+4. Put a reverse proxy (Nginx Proxy Manager, Caddy, etc.) in front with HTTPS/SSL
+5. Consider migrating from H2 to PostgreSQL or MySQL for heavier use
+6. Set up regular backups of `docker-data/`
 
-10. **Add audit logging**
+---
 
-## Backup and Restore
-
-### Backup Database
+## Backup and restore
 
 ```bash
-# Docker environment
-tar -czf backup-$(date +%Y%m%d).tar.gz docker-data/
+# Backup
+tar -czf trackmystacks-backup-$(date +%Y%m%d).tar.gz docker-data/
 
-# Local environment
-tar -czf backup-$(date +%Y%m%d).tar.gz data/
+# Restore
+docker compose down
+tar -xzf trackmystacks-backup-YYYYMMDD.tar.gz
+docker compose up -d
 ```
 
-### Restore Database
+---
 
-```bash
-# Stop application
-docker-compose down
+## For developers — where to look for what
 
-# Restore backup
-tar -xzf backup-20260220.tar.gz
-
-# Start application
-docker-compose up -d
-```
-
-## Performance Considerations
-
-- H2 is suitable for development and small deployments
-- For production with multiple users, consider PostgreSQL or MySQL
-- Implement connection pooling for production
-- Add caching layer for frequently accessed data
-- Implement pagination for large expense lists
-
-## Feature List
-
-### Implemented Features
-- User authentication and authorization
-- Admin-controlled user management
-- Dynamic category system
-- Expense CRUD operations (Create, Read, Update, Delete)
-- Recurring expense tracking
-- Mobile responsive design
-- Animated, accessible UI
-- Docker containerization
-- Data persistence
-- Real-time calculations
-
-
-## Design Philosophy
-
-
-### Mobile-First Responsive
-- Works beautifully on all devices
-- Card layout on mobile for easier reading
-- Table layout on desktop for efficiency
-- No horizontal scrolling required
-
-### Security by Design
-- Admin-only user creation prevents spam
-- Password hashing never stores plain text
-- Session-based authentication
-- Role-based access control
-
-```
-
+| Need to change | File |
+|---|---|
+| Which routes require login or admin | `config/SecurityConfig.java` |
+| Default admin user or default categories | `config/DataInitializer.java` |
+| Login page appearance | `templates/login.html` |
+| Dashboard layout, expense table, edit modal | `templates/dashboard.html` |
+| Admin panel layout | `templates/admin/panel.html` |
+| Expense add/edit/delete logic | `controller/ExpenseController.java` + `service/ExpenseService.java` |
+| User creation/deletion | `controller/AdminController.java` + `service/UserService.java` |
+| Category management | `controller/AdminController.java` + `service/CategoryService.java` |
+| Port, DB path, Thymeleaf config | `src/main/resources/application.properties` |
+| Docker volumes and port mapping | `docker-compose.yml` |
